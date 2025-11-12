@@ -36,14 +36,6 @@ synchronization status updates.
 -define(NTPD_RESTART_DELAY, 60000).
 -define(NTPD_CLEAN_START_DELAY, 10).
 
--define(DEFAULT_NTPD_PATH, "/usr/sbin/ntpd").
--define(DEFAULT_NTP_SERVERS, [
-    "0.pool.ntp.org",
-    "1.pool.ntp.org",
-    "2.pool.ntp.org",
-    "3.pool.ntp.org"
-]).
-
 -record(state, {
     socket :: port() | undefined,
     servers :: [string()],
@@ -96,8 +88,7 @@ restart_ntpd() ->
 %%%===================================================================
 
 init(_Args) ->
-    AppEnv = application:get_all_env(grisp_time),
-    NtpServers = proplists:get_value(servers, AppEnv, ?DEFAULT_NTP_SERVERS),
+    {ok, NtpServers} = application:get_env(grisp_time, servers),
     State = #state{servers = NtpServers},
     {ok, State, {continue, continue}}.
 
@@ -243,7 +234,7 @@ handle_ntpd_report(Report, State) ->
     {noreply, State}.
 
 start_ntpd(#state{servers = Servers} = State) ->
-    NtpdPath = application:get_env(grisp_time, ntpd, ?DEFAULT_NTPD_PATH),
+    {ok, NtpdPath} = application:get_env(grisp_time, ntpd),
     NtpdScriptPath = filename:join([
         code:priv_dir(grisp_time),
         "ntpd_script"
